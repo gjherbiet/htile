@@ -1,0 +1,55 @@
+h1. htile
+
+@htile@ is a bash script that makes possible to easily tile windows
+in the GNOME desktop environment. The currently selected window is resized
+and re-positioned to occupy either the top, bottom, left, right half;
+or one of the four quarters of your screen.
+
+Placing considers automatically your screen resolution as well as the size
+of the GNOME panels you may have placed on the different sides of your desktop.
+
+h2. Pre-requisites
+
+@htile@ requires the @wmctrl@ utility. This tool is generally available as
+package on the repositories of your distribution of choice. For instance
+Debian GNU/Linux or Ubuntu users can install it by typing @apt-get install wmctrl@
+as superuser from their terminal.
+
+h2. Usage
+
+<pre>
+usage: htile [-h] [-v] -m (up|down|left|right|up-left|down-left|up-right|down-right)
+  -h    : prints this help message
+  -v    : enable verbose mode
+  -m    : the movement command
+</pre>
+
+h2. Keyboard shortcuts
+
+@htile@ is designed to be available in your path and to be called by keyboard
+shortcut. This mimics utilities like "SizeUp":http://www.irradiatedsoftware.com/sizeup/
+available for Max OS X.
+
+Once @htile@ directory is in your @$PATH@ variable, you can go to
+@System -> Preferences -> Keyboard shortcuts@ in the GNOME menu and add
+a shortcut for the different move commands.
+
+Here are examples, based on "SizeUp":http://www.irradiatedsoftware.com/sizeup/
+defaults :
+
+<pre>
+    htile -m left       CTRL + ALT + left
+    htile -m right      CTRL + ALT + right
+    htile -m up         CTRL + ALT + up
+    htile -m down       CTRL + ALT + down
+    
+    htile -m up-left    CTRL + SHIFT + ALT + left
+    htile -m up-right   CTRL + SHIFT + ALT + up
+    htile -m down-left  CTRL + SHIFT + ALT + down
+    htile -m down-right CTRL + SHIFT + ALT + right
+</pre>
+
+h2. License
+
+@iPhoto-cleaner@ is licensed under the "GPL v.3":http://www.gnu.org/licenses/
+license. See previous link or @gpl-3.0.txt@ for further details.

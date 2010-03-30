@@ -1,0 +1,151 @@
+#!/bin/bash
+
+##############################################################################
+# File   : htile
+# Author : Guillaume-Jean Herbiet  <guillaume@herbiet.net>
+#
+#
+# Copyright (c) 2010 Guillaume-Jean Herbiet     (http://www.herbiet.net)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Guillaume-Jean Herbiet
+# <guillaume@herbiet.net>
+##############################################################################
+
+# Test if wmctrl is installed and in the path
+if [ `which wmctrl | wc -l` == "0" ]; then
+	echo "htile.sh requires wmctrl to be installed in your path."
+	echo "please use \"sudo apt-get install wmctrl\" to install the utility on you system."
+	exit 1;
+fi
+
+MARGIN=26
+VERBOSE=0
+MOVE="left"
+while getopts "hm:v" OPTION; do
+	case $OPTION in
+		h)
+			echo "htile -m (up|down|left|right|up-left|down-left|up-right|down-right)"
+			echo "Tiles the current window to specified half or quarter part of the current workspace."
+			exit 0;
+			;;
+		m)
+			MOVE=$OPTARG
+			;;
+		v)
+			VERBOSE=1
+			;;
+	esac
+done
+
+# Get the current workspace size
+DESKTOP_WIDTH=$(wmctrl -d | grep "*"| awk '{split($4, res, "x"); print res[1]}')
+DESKTOP_HEIGHT=$(wmctrl -d | grep "*"| awk '{split($4, res, "x"); print res[2]}')
+if [ $VERBOSE -gt 0 ]; then echo "Desktop is $DESKTOP_WIDTH x $DESKTOP_HEIGHT"; fi
+
+# Reduces the desktop height due to horizontal panels
+TOP_MARGIN=0
+TOP_PANELS=($(wmctrl -l -G | grep -E "Top.*Panel" | awk '{print $6}'))
+for PANEL in ${TOP_PANELS[@]}; do
+	TOP_MARGIN=$(expr $TOP_MARGIN + $PANEL)
+done
+BOTTOM_MARGIN=0
+BOTTOM_PANELS=($(wmctrl -l -G | grep -E "Bottom.*Panel" | awk '{print $6}'))
+for PANEL in ${BOTTOM_PANELS[@]}; do
+	BOTTOM_MARGIN=$(expr $BOTTOM_MARGIN + $PANEL)
+done
+DESKTOP_HEIGHT=$(expr $DESKTOP_HEIGHT - $TOP_MARGIN - $BOTTOM_MARGIN)
+if [ $VERBOSE -gt 0 ]; then echo "Desktop is now $DESKTOP_WIDTH x $DESKTOP_HEIGHT"; fi
+
+# Reduces the desktop width due to vertical panels
+LEFT_MARGIN=0
+LEFT_PANELS=($(wmctrl -l -G | grep -E "Left.*Panel" | awk '{print $5}'))
+for PANEL in ${LEFT_PANELS[@]}; do
+	LEFT_MARGIN=$(expr $LEFT_MARGIN + $PANEL)
+done
+RIGHT_MARGIN=0
+RIGHT_PANELS=($(wmctrl -l -G | grep -E "Right.*Panel" | awk '{print $5}'))
+for PANEL in ${RIGHT_PANELS[@]}; do
+	RIGHT_MARGIN=$(expr $RIGHT_MARGIN + $PANEL)
+done
+DESKTOP_WIDTH=$(expr $DESKTOP_WIDTH - $LEFT_MARGIN - $RIGHT_MARGIN)
+if [ $VERBOSE -gt 0 ]; then echo "Desktop is now $DESKTOP_WIDTH x $DESKTOP_HEIGHT"; fi
+
+# Get the current window id
+ACTIVE_WINDOW_ID=$(xprop -root | grep "_NET_ACTIVE_WINDOW(WINDOW)" | awk '{print $5}')
+
+# Now actually move the window
+X=
+Y=
+W=
+H=
+case $MOVE in
+	up)
+		X=0
+		Y=$TOP_MARGIN
+		W=$DESKTOP_WIDTH
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		;;
+	down)
+		X=0
+		Y=$(expr $DESKTOP_HEIGHT / 2 + $TOP_MARGIN + $MARGIN)
+		W=$DESKTOP_WIDTH
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		wmctrl -r $ACTIVE_WINDOW_ID -i -e "0,0,`expr $DESKTOP_HEIGHT / 2`,$DESKTOP_WIDTH,`expr $DESKTOP_HEIGHT / 2`"
+		;;
+	left)
+		X=0
+		Y=$TOP_MARGIN
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$DESKTOP_HEIGHT
+		;;
+	right)
+		X=$(expr $DESKTOP_WIDTH / 2)
+		Y=$TOP_MARGIN
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$DESKTOP_HEIGHT
+		;;
+	up-left)
+		X=0
+		Y=$TOP_MARGIN
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		;;
+	down-left)
+		X=0
+		Y=$(expr $DESKTOP_HEIGHT / 2 + $TOP_MARGIN + $MARGIN)
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		;;
+	up-right)
+		X=$(expr $DESKTOP_WIDTH / 2)
+		Y=$TOP_MARGIN
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		;;
+	down-right)
+		X=$(expr $DESKTOP_WIDTH / 2)
+		Y=$(expr $DESKTOP_HEIGHT / 2 + $TOP_MARGIN + $MARGIN)
+		W=$(expr $DESKTOP_WIDTH / 2)
+		H=$(expr $DESKTOP_HEIGHT / 2 - $MARGIN)
+		;;
+	*)
+		echo "Error: incorrect move specification"
+		exit 2;
+		;;
+esac
+if [ $VERBOSE -gt 0 ]; then echo "Moving window $ACTIVE_WINDOW_ID to $X,$Y,$W,$H"; fi
+wmctrl -r $ACTIVE_WINDOW_ID -i -e "0,$X,$Y,$W,$H"
+
